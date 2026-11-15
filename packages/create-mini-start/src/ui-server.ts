@@ -1,30 +1,45 @@
 /**
- * The project builder: a small local web server and a single-page UI.
+ * The project builder: a small local web server and a React page (src/ui).
  *
  * The server can write files and run installs, so it only listens on
  * localhost and every API call must carry a random per-run token. The token
- * is in the URL the CLI prints and opens. Host and Origin checks block DNS
- * rebinding and cross-site requests from other pages in the browser.
+ * is in the URL the CLI prints and opens. Host, Origin and Sec-Fetch-Site
+ * checks block DNS rebinding and requests from other sites in the browser.
+ *
+ * The page comes from one of two places:
+ *  - source: the React code in src/ui, compiled on the fly by Vite, with hot
+ *    reload. Used when the CLI runs as TypeScript from this repo.
+ *  - build:  the output of `pnpm build:ui` in dist/ui. Used by a compiled
+ *    (published) copy, which doesn't have Vite.
+ * CREATE_MINI_START_UI=source|build overrides the choice.
  */
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createProject } from './create.ts'
 import { detectEnvironment, type Environment, invokingPackageManager, openBrowser, openInEditor } from './env.ts'
-import { planProject, toolVersion } from './generate.ts'
+import { type PlannedFile, planProject, toolVersion } from './generate.ts'
 import {
+  type AddOn,
+  type AddOnId,
   ADD_ONS,
   DEFAULT_ADD_ONS,
   DEFAULT_FRAMEWORK,
   DEFAULT_NAME,
   DEFAULT_PATTERN,
+  type Framework,
   type FrameworkId,
   FRAMEWORKS,
   normalizeOptions,
+  PACKAGE_MANAGERS,
   type PackageManager,
+  type Pattern,
   type PatternId,
   PATTERNS,
+  type ProjectOptions,
   suggestName,
   targetDir,
   validateName,
@@ -46,17 +61,47 @@ export interface UiOptions {
     framework?: FrameworkId
     pattern?: PatternId
     packageManager?: PackageManager
-    addOns?: string[]
+    addOns?: AddOnId[]
     install?: boolean
     git?: boolean
   }
+  /** Where the page comes from; see the top of this file. */
+  page?: PageMode
+}
+
+export type PageMode = 'source' | 'build'
+
+/** GET /api/info: the catalogs, what's installed, and the form's starting values. */
+export interface BuilderInfo {
+  version: string
+  cwd: string
+  command: string
+  frameworks: Framework[]
+  patterns: Pattern[]
+  addOns: AddOn[]
+  /** Every supported package manager; `version` is null when it isn't installed. */
+  packageManagers: { id: PackageManager; version: string | null }[]
+  /** git's version, or null when it isn't installed. */
+  git: string | null
+  vscode: boolean
+  defaults: ProjectOptions
+}
+
+export type FieldErrors = Partial<Record<'name' | 'parentDir', string>>
+
+/** POST /api/preview: the files the options would produce, and any problems with name or location. */
+export interface PreviewResponse {
+  target: string
+  errors: FieldErrors
+  files: PlannedFile[]
 }
 
 const MAX_BODY = 64 * 1024
+const UI_SOURCE = fileURLToPath(new URL('./ui/', import.meta.url))
+const UI_BUILD = fileURLToPath(new URL('../dist/ui/', import.meta.url))
 
 export async function startUi(opts: UiOptions): Promise<void> {
   const token = randomBytes(18).toString('base64url')
-  const page = fs.readFileSync(new URL('./ui/index.html', import.meta.url), 'utf8')
   const environment = detectEnvironment()
   const created = new Set<string>()
   let busy = false
@@ -67,29 +112,38 @@ export async function startUi(opts: UiOptions): Promise<void> {
       else res.end()
     })
   })
+  const page = await loadPage(opts.page ?? defaultPageMode(), server)
 
   async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     const port = (server.address() as AddressInfo).port
     const hosts = [`localhost:${port}`, `127.0.0.1:${port}`, `[::1]:${port}`]
-    if (!hosts.includes(req.headers.host ?? '')) return send(res, 403, 'text/plain', 'Unknown host')
-    const url = new URL(req.url ?? '/', `http://${req.headers.host}`)
+    const host = req.headers.host ?? ''
+    if (!hosts.includes(host)) return send(res, 403, 'text/plain', 'Unknown host')
+    const url = new URL(req.url ?? '/', `http://${host}`)
 
     if (req.method === 'GET' && url.pathname === '/') {
       if (!tokenMatches(url.searchParams.get('token'), token)) {
         return send(res, 403, 'text/html; charset=utf-8', FORBIDDEN_PAGE)
       }
-      return send(res, 200, 'text/html; charset=utf-8', page.replace('__CREATE_TOKEN__', token), {
-        'content-security-policy':
-          "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'",
-      })
+      const html = (await page.html(req.url ?? '/')).replace('__CREATE_TOKEN__', token)
+      return send(res, 200, 'text/html; charset=utf-8', html, { 'content-security-policy': page.csp(host) })
     }
+
+    // Everything else is only for the builder page itself. Browsers say where a request
+    // comes from; refuse other sites, including other localhost ports.
+    const site = req.headers['sec-fetch-site']
+    if (site === 'cross-site' || site === 'same-site') return send(res, 403, 'text/plain', 'Cross-site request refused')
+
     if (req.method === 'GET' && url.pathname === '/favicon.svg') {
       return send(res, 200, 'image/svg+xml', faviconSvg())
     }
-    if (!url.pathname.startsWith('/api/')) return send(res, 404, 'text/plain', 'Not found')
+    if (!url.pathname.startsWith('/api/')) {
+      if (await page.serve(req, res, url.pathname)) return
+      return send(res, 404, 'text/plain', 'Not found')
+    }
 
     const origin = req.headers.origin
-    if (origin && !hosts.some((host) => origin === `http://${host}`)) {
+    if (origin && !hosts.some((h) => origin === `http://${h}`)) {
       return sendJson(res, 403, { error: 'Cross-origin request refused' })
     }
     if (!tokenMatches(req.headers['x-create-token'], token)) {
@@ -107,7 +161,7 @@ export async function startUi(opts: UiOptions): Promise<void> {
       // An unusable name would end up inside generated code; preview with a placeholder.
       const name = validateName(options.name) ? DEFAULT_NAME : options.name
       const files = planProject({ ...options, name })
-      return sendJson(res, 200, { target: targetDir(options), errors, files })
+      return sendJson(res, 200, { target: targetDir(options), errors, files } satisfies PreviewResponse)
     }
 
     if (route === 'POST /api/create') {
@@ -158,11 +212,10 @@ export async function startUi(opts: UiOptions): Promise<void> {
     return sendJson(res, 404, { error: 'Not found' })
   }
 
-  function info(env: Environment) {
-    const available = env.packageManagers.map((pm) => pm.id)
-    const preferred = [opts.initial?.packageManager, invokingPackageManager(), 'pnpm', 'npm']
-    const packageManager =
-      preferred.find((pm) => pm && available.includes(pm)) ?? available[0] ?? opts.initial?.packageManager ?? 'npm'
+  function info(env: Environment): BuilderInfo {
+    const installed = new Map(env.packageManagers.map((pm) => [pm.id, pm.version]))
+    const preferred = [opts.initial?.packageManager, invokingPackageManager(), 'pnpm', 'npm', ...PACKAGE_MANAGERS]
+    const packageManager = (preferred.find((pm) => pm && installed.has(pm)) ?? opts.initial?.packageManager ?? 'npm') as PackageManager
     return {
       version: toolVersion(),
       cwd: opts.cwd,
@@ -170,7 +223,7 @@ export async function startUi(opts: UiOptions): Promise<void> {
       frameworks: FRAMEWORKS,
       patterns: PATTERNS,
       addOns: ADD_ONS,
-      packageManagers: env.packageManagers,
+      packageManagers: PACKAGE_MANAGERS.map((id) => ({ id, version: installed.get(id) ?? null })),
       git: env.git,
       vscode: env.vscode,
       defaults: {
@@ -189,7 +242,7 @@ export async function startUi(opts: UiOptions): Promise<void> {
   const port = await listen(server, opts.port)
   const url = `http://localhost:${port}/?token=${token}`
   console.log(`
-  \x1b[1mcreate-mini-start\x1b[0m v${toolVersion()}
+  \x1b[1mcreate-mini-start\x1b[0m v${toolVersion()}${page.mode === 'source' ? ' \x1b[2m(page served from source, with hot reload)\x1b[0m' : ''}
 
   ➜  Project builder: \x1b[36m${url}\x1b[0m
      ${opts.open ? 'Opening it in your browser. ' : ''}Press Ctrl+C to quit.
@@ -197,8 +250,116 @@ export async function startUi(opts: UiOptions): Promise<void> {
   if (opts.open) openBrowser(url)
 
   await new Promise<void>((resolve) => server.on('close', resolve))
+  await page.close()
   console.log('  Project builder closed.')
 }
+
+// ---------------------------------------------------------------- The page
+
+function defaultPageMode(): PageMode {
+  const forced = process.env.CREATE_MINI_START_UI
+  if (forced === 'source' || forced === 'build') return forced
+  return import.meta.url.endsWith('.ts') ? 'source' : 'build'
+}
+
+interface Page {
+  mode: PageMode
+  /** The page's HTML, with the token placeholder still in it. */
+  html(url: string): Promise<string>
+  /** Serves a script, stylesheet or other file the page loads. Resolves to false when there's no such file. */
+  serve(req: http.IncomingMessage, res: http.ServerResponse, pathname: string): Promise<boolean>
+  /** Content-Security-Policy for the HTML. */
+  csp(host: string): string
+  close(): Promise<void>
+}
+
+const BASE_CSP = "default-src 'none'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+
+async function loadPage(mode: PageMode, server: http.Server): Promise<Page> {
+  return mode === 'source' ? sourcePage(server) : builtPage()
+}
+
+/** The output of `pnpm build:ui`: index.html plus hashed files in assets/. */
+function builtPage(): Page {
+  const indexFile = path.join(UI_BUILD, 'index.html')
+  if (!fs.existsSync(indexFile)) {
+    throw new Error(`The project builder page isn't built (no ${indexFile}). Run "pnpm build:ui" first.`)
+  }
+  const html = fs.readFileSync(indexFile, 'utf8')
+  const assets = path.join(UI_BUILD, 'assets')
+  return {
+    mode: 'build',
+    html: async () => html,
+    async serve(req, res, pathname) {
+      if (req.method !== 'GET' || !pathname.startsWith('/assets/')) return false
+      let file: string
+      try {
+        file = path.join(UI_BUILD, decodeURIComponent(pathname))
+      } catch {
+        return false
+      }
+      const relative = path.relative(assets, file)
+      if (relative.startsWith('..') || path.isAbsolute(relative)) return false
+      let body: Buffer
+      try {
+        body = fs.readFileSync(file)
+      } catch {
+        return false
+      }
+      res.writeHead(200, {
+        'content-type': CONTENT_TYPES[path.extname(file)] ?? 'application/octet-stream',
+        // File names contain a content hash.
+        'cache-control': 'public, max-age=31536000, immutable',
+        'x-content-type-options': 'nosniff',
+      })
+      res.end(body)
+      return true
+    },
+    csp: () => `${BASE_CSP}; script-src 'self'; style-src 'self'; connect-src 'self'`,
+    close: async () => {},
+  }
+}
+
+/** Vite in middleware mode, sharing our HTTP server for hot reload. */
+async function sourcePage(server: http.Server): Promise<Page> {
+  let vite: typeof import('vite')
+  try {
+    vite = await import('vite')
+  } catch {
+    throw new Error('Serving the builder page from source needs Vite. Run "pnpm install", or "pnpm build:ui" and set CREATE_MINI_START_UI=build.')
+  }
+  const dev = await vite.createServer({
+    configFile: path.join(UI_SOURCE, 'vite.config.ts'),
+    appType: 'custom',
+    logLevel: 'warn',
+    server: { middlewareMode: true, ws: { server } },
+  })
+  const indexFile = path.join(UI_SOURCE, 'index.html')
+  return {
+    mode: 'source',
+    html: (url) => dev.transformIndexHtml(url, fs.readFileSync(indexFile, 'utf8')),
+    serve: (req, res) =>
+      new Promise((resolve) => {
+        res.once('close', () => resolve(true))
+        dev.middlewares(req, res, () => resolve(false))
+      }),
+    // Vite injects an inline script (React Fast Refresh) and inline styles, and talks to the page over a WebSocket.
+    csp: (host) =>
+      `${BASE_CSP}; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://${host}`,
+    close: () => dev.close(),
+  }
+}
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json; charset=utf-8',
+}
+
+// ---------------------------------------------------------------- Helpers
 
 /** Listens on localhost, trying the next ports if the preferred one is taken. */
 async function listen(server: http.Server, preferred: number): Promise<number> {

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node packages/create-mini-start/src/cli.ts --ui --port 5173",
+    "build:ui": "pnpm --filter create-mini-start build:ui",
     "demo": "pnpm --filter demo dev --port 5180",
     "demo:build": "pnpm --filter demo build",
     "demo:start": "pnpm --filter demo preview",

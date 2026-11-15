@@ -17,7 +17,7 @@ docs/                                  notes on how TanStack Start works
 pnpm install
 pnpm dev                    # the project builder, on http://localhost:5173
 pnpm create-app --ui        # the same builder on its default port (4600)
-pnpm create-app my-app      # or answer prompts in the terminal
+pnpm create-app my-app      # or pick from lists in the terminal (arrow keys, space, enter)
 ```
 
 The builder lets you name the project, pick a package manager, and choose:

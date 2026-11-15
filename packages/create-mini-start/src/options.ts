@@ -108,6 +108,8 @@ export interface AddOn {
   group: AddOnGroup
   name: string
   description: string
+  /** A few words for the terminal's add-on list, where the description would wrap. */
+  hint: string
 }
 
 export const ADD_ONS: AddOn[] = [
@@ -116,60 +118,70 @@ export const ADD_ONS: AddOn[] = [
     group: 'Styling',
     name: 'Tailwind CSS',
     description: 'Tailwind v4 via its Vite plugin. Starter styles live in CSS layers, so utility classes override them.',
+    hint: 'Tailwind v4 via its Vite plugin',
   },
   {
     id: 'css-modules',
     group: 'Styling',
     name: 'CSS Modules',
     description: 'Each component gets its own .module.css file. Class names and animations are local to that file.',
+    hint: 'A scoped .module.css per component',
   },
   {
     id: 'router',
     group: 'App',
     name: 'Routing',
     description: 'React Router with Home, About and "not found" pages, and header links that show the current page.',
+    hint: 'React Router with Home, About and 404 pages',
   },
   {
     id: 'state',
     group: 'App',
     name: 'State management',
     description: 'Zustand: a small typed store, with the starter counter moved into it as the example.',
+    hint: 'A typed Zustand store',
   },
   {
     id: 'query',
     group: 'App',
     name: 'Data fetching',
     description: 'TanStack Query: a typed fetch helper and an example query with loading and error states.',
+    hint: 'TanStack Query with an example query',
   },
   {
     id: 'theme',
     group: 'App',
     name: 'Theme toggle',
     description: 'A light / dark / system switch in the header that remembers the choice.',
+    hint: 'Light / dark / system switch in the header',
   },
   {
     id: 'env-errors',
     group: 'App',
     name: 'Env + error handling',
     description: 'Typed environment variables with a .env.example, and an error boundary with a fallback screen.',
+    hint: 'Typed env vars and an error boundary',
   },
   {
     id: 'testing',
     group: 'Quality',
     name: 'Testing',
     description: 'Vitest and React Testing Library, with test scripts and one example test.',
+    hint: 'Vitest and React Testing Library',
   },
   {
     id: 'husky',
     group: 'Quality',
     name: 'Husky + lint-staged',
     description: 'A pre-commit hook that lints (Oxlint) and formats (Prettier) the files you are committing.',
+    hint: 'Lints and formats staged files on commit',
   },
   {
     id: 'docker',
     group: 'Deploy',
     name: 'Docker + nginx',
     description: 'A Dockerfile that builds the app and serves it with nginx, an nginx config, and a Compose file.',
+    hint: 'Dockerfile, nginx config and Compose file',
   },
 ]
 
