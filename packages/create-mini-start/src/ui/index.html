@@ -134,6 +134,8 @@ code { font-family: var(--mono); }
   transition: border-color 0.15s, background 0.15s;
 }
 #patterns { grid-template-columns: 1fr; }
+.addon-group { grid-column: 1 / -1; margin-top: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.addon-group:first-child { margin-top: 0; }
 .addon:hover { border-color: var(--border-strong); }
 .addon:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .addon input, .seg input, .toggle input { position: absolute; opacity: 0; pointer-events: none; }
@@ -536,7 +538,12 @@ function showForm() {
   }
 
   const addons = $('addons')
+  let group = ''
   for (const addOn of info.addOns) {
+    if (addOn.group !== group) {
+      group = addOn.group
+      addons.append(el('div', { class: 'addon-group' }, group))
+    }
     const label = el('label', { class: 'addon' })
     const input = el('input', { type: 'checkbox', value: addOn.id })
     input.checked = options.addOns.includes(addOn.id)

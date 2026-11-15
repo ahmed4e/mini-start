@@ -6,7 +6,9 @@
     "dev": "node packages/create-mini-start/src/cli.ts --ui --port 5173",
     "demo": "pnpm --filter demo dev --port 5180",
     "demo:build": "pnpm --filter demo build",
-    "demo:start": "pnpm --filter demo start",
+    "demo:start": "pnpm --filter demo preview",
+    "demo:sync": "node packages/create-mini-start/scripts/sync-demo.ts && pnpm install",
+    "test:demo": "pnpm --filter demo test",
     "create-app": "node packages/create-mini-start/src/cli.ts",
     "typecheck": "pnpm -r typecheck",
     "test": "node --test 'packages/*/test/*.test.ts'"

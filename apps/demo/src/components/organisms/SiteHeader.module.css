@@ -1,0 +1,34 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.header nav a:hover,
+.header nav a:global(.active) {
+  color: var(--text);
+}
+
+.actions {
+  margin-left: auto;
+}

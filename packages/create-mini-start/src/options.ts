@@ -86,11 +86,26 @@ export const PATTERNS: Pattern[] = [
 export const DEFAULT_PATTERN: PatternId = 'atomic'
 
 /** Optional extras on top of the starter. More will follow. */
-export const ADD_ON_IDS = ['tailwind', 'husky'] as const
+export const ADD_ON_IDS = [
+  'tailwind',
+  'css-modules',
+  'router',
+  'state',
+  'query',
+  'theme',
+  'env-errors',
+  'testing',
+  'husky',
+  'docker',
+] as const
 export type AddOnId = (typeof ADD_ON_IDS)[number]
+
+export const ADD_ON_GROUPS = ['Styling', 'App', 'Quality', 'Deploy'] as const
+export type AddOnGroup = (typeof ADD_ON_GROUPS)[number]
 
 export interface AddOn {
   id: AddOnId
+  group: AddOnGroup
   name: string
   description: string
 }
@@ -98,13 +113,63 @@ export interface AddOn {
 export const ADD_ONS: AddOn[] = [
   {
     id: 'tailwind',
+    group: 'Styling',
     name: 'Tailwind CSS',
     description: 'Tailwind v4 via its Vite plugin. Starter styles live in CSS layers, so utility classes override them.',
   },
   {
+    id: 'css-modules',
+    group: 'Styling',
+    name: 'CSS Modules',
+    description: 'Each component gets its own .module.css file. Class names and animations are local to that file.',
+  },
+  {
+    id: 'router',
+    group: 'App',
+    name: 'Routing',
+    description: 'React Router with Home, About and "not found" pages, and header links that show the current page.',
+  },
+  {
+    id: 'state',
+    group: 'App',
+    name: 'State management',
+    description: 'Zustand: a small typed store, with the starter counter moved into it as the example.',
+  },
+  {
+    id: 'query',
+    group: 'App',
+    name: 'Data fetching',
+    description: 'TanStack Query: a typed fetch helper and an example query with loading and error states.',
+  },
+  {
+    id: 'theme',
+    group: 'App',
+    name: 'Theme toggle',
+    description: 'A light / dark / system switch in the header that remembers the choice.',
+  },
+  {
+    id: 'env-errors',
+    group: 'App',
+    name: 'Env + error handling',
+    description: 'Typed environment variables with a .env.example, and an error boundary with a fallback screen.',
+  },
+  {
+    id: 'testing',
+    group: 'Quality',
+    name: 'Testing',
+    description: 'Vitest and React Testing Library, with test scripts and one example test.',
+  },
+  {
     id: 'husky',
+    group: 'Quality',
     name: 'Husky + lint-staged',
     description: 'A pre-commit hook that lints (Oxlint) and formats (Prettier) the files you are committing.',
+  },
+  {
+    id: 'docker',
+    group: 'Deploy',
+    name: 'Docker + nginx',
+    description: 'A Dockerfile that builds the app and serves it with nginx, an nginx config, and a Compose file.',
   },
 ]
 

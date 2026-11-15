@@ -41,16 +41,22 @@ export function planProject(
   const add = (file: string, content: string, addOn?: AddOnId) =>
     files.push({ path: file, content, ...(addOn ? { addOn } : {}) })
 
-  add('package.json', t.packageJson(ctx, pattern.dependencies))
+  add('package.json', t.packageJson(ctx))
   add('tsconfig.json', t.tsconfigJson())
   add('vite.config.ts', t.viteConfig(ctx))
-  add('.gitignore', t.gitignore())
+  add('.gitignore', t.gitignore(ctx))
   add('README.md', t.readme(ctx, pattern.guide))
   add('index.html', t.indexHtml(ctx))
   add('public/favicon.svg', t.faviconSvg())
-  add('src/main.tsx', t.mainTsx(pattern.mainImports))
-  add('src/styles.css', t.stylesCss(ctx, pattern.css))
-  for (const file of pattern.files) add(file.path, file.content)
+  add('src/main.tsx', t.mainTsx(pattern.main))
+  add('src/styles.css', t.stylesCss(ctx, [pattern.tagCss, pattern.css].filter(Boolean).join('\n\n') || undefined, pattern.globalSelectors))
+  for (const file of pattern.files) add(file.path, file.content, file.addOn)
+  if (ctx.addOns.has('docker')) {
+    add('Dockerfile', t.dockerfile(ctx), 'docker')
+    add('.dockerignore', t.dockerignore(), 'docker')
+    add('nginx.conf', t.nginxConf(ctx), 'docker')
+    add('compose.yaml', t.composeYaml(ctx), 'docker')
+  }
   if (ctx.addOns.has('husky')) {
     add('.husky/pre-commit', t.huskyPreCommit(ctx.packageManager), 'husky')
     add('.oxlintrc.json', t.oxlintConfig(), 'husky')

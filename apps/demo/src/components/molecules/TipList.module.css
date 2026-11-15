@@ -1,0 +1,12 @@
+.tips {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tips li {
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--accent-soft);
+}

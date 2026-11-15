@@ -20,8 +20,9 @@
     line-height: 1.55;
   }
 
+  /* The device prefers dark, and the visitor hasn't chosen light. */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme='light']) {
       --bg: #0b0b0d;
       --surface: #16161a;
       --text: #ececef;
@@ -32,6 +33,24 @@
       --on-accent: #042f2e;
       --danger: #fb7185;
     }
+  }
+
+  /* The visitor's own choice, set by the theme toggle. */
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #0b0b0d;
+    --surface: #16161a;
+    --text: #ececef;
+    --muted: #9b9ba5;
+    --border: #2a2a31;
+    --accent: #2dd4bf;
+    --accent-soft: #123b37;
+    --on-accent: #042f2e;
+    --danger: #fb7185;
   }
 
   * {
@@ -91,295 +110,7 @@
 }
 
 @layer components {
-  .pending-bar {
-    position: fixed;
-    inset: 0 0 auto 0;
-    height: 3px;
-    background: var(--accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    opacity: 0;
-    transition: transform 0.2s ease, opacity 0.3s ease;
-    z-index: 10;
-  }
-
-  .pending-bar[data-active='true'] {
-    transform: scaleX(0.7);
-    opacity: 1;
-    transition: transform 8s cubic-bezier(0.1, 0.7, 0.2, 1), opacity 0.1s;
-  }
-
-  .site-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 0.9rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  .brand {
-    font-weight: 700;
-    color: var(--text);
-    text-decoration: none;
-  }
-
-  .site-header nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .site-header nav a {
-    color: var(--muted);
-    text-decoration: none;
-  }
-
-  .site-header nav a:hover,
-  .site-header nav a.active {
-    color: var(--text);
-  }
-
-  .container {
-    display: grid;
-    gap: 1.25rem;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 4rem;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-  }
-
-  .hero h1 {
-    font-size: clamp(1.8rem, 4vw, 2.6rem);
-  }
-
-  .hero p {
-    max-width: 60ch;
-  }
-
   .muted {
     color: var(--muted);
-  }
-
-  .small {
-    font-size: 0.875rem;
-  }
-
-  .steps {
-    display: grid;
-    gap: 0.4rem;
-    margin: 0;
-    padding-left: 1.2rem;
-    list-style: disc;
-  }
-}
-
-/*
- * Everything above is exactly the stylesheet create-mini-start generates for a
- * new app with Tailwind (a test keeps them in sync). Below: rules for the
- * demo's extra pages.
- */
-@layer components {
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 1rem;
-  }
-
-  .feature {
-    color: inherit;
-    text-decoration: none;
-    transition: border-color 0.15s ease;
-  }
-
-  .feature:hover {
-    border-color: var(--accent);
-  }
-
-  .feature h3 {
-    margin: 0 0 0.35rem;
-    color: var(--accent);
-  }
-
-  .feature p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 0.925rem;
-  }
-
-  .facts {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 0.25rem 1rem;
-    margin: 0.75rem 0 0;
-  }
-
-  .facts dt {
-    color: var(--muted);
-  }
-
-  .facts dd {
-    margin: 0;
-  }
-
-  ol.steps {
-    list-style: decimal;
-  }
-
-  /* Posts: a list on the left, the selected post on the right. */
-  .split {
-    display: grid;
-    grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
-    gap: 1.25rem;
-    align-items: start;
-  }
-
-  .nav-list {
-    display: grid;
-    gap: 0.25rem;
-    margin: 0.5rem 0 0.75rem;
-    padding: 0;
-    list-style: none;
-  }
-
-  .nav-list a {
-    display: block;
-    padding: 0.35rem 0.6rem;
-    border-radius: 8px;
-    color: var(--text);
-    text-decoration: none;
-  }
-
-  .nav-list a:hover {
-    background: var(--bg);
-  }
-
-  .nav-list a.active {
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
-
-  .nav-list a.muted {
-    color: var(--muted);
-  }
-
-  .nav-list > li:not(:has(a)) {
-    padding: 0.35rem 0.6rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .tag {
-    display: inline-block;
-    margin-left: 0.35rem;
-    padding: 0 0.5rem;
-    border-radius: 999px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-size: 0.8rem;
-  }
-
-  .empty {
-    padding: 1.5rem 0;
-    text-align: center;
-  }
-
-  .error h2,
-  .error-text {
-    color: var(--danger);
-  }
-
-  /* Forms: the todo input and the search box. */
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  input:not([type='checkbox']) {
-    width: 100%;
-    min-width: 0;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg);
-    color: var(--text);
-  }
-
-  .row input {
-    flex: 1;
-    width: auto;
-  }
-
-  button {
-    padding: 0.55rem 1rem;
-    border: 0;
-    border-radius: 8px;
-    background: var(--accent);
-    color: var(--on-accent);
-    cursor: pointer;
-  }
-
-  button:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
-  .link-button {
-    padding: 0;
-    background: none;
-    color: var(--danger);
-  }
-
-  .todo-list {
-    display: grid;
-    margin: 1rem 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .todo-list li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .todo-list label {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .todo-list li.done label {
-    color: var(--muted);
-    text-decoration: line-through;
-  }
-
-  /* Streaming: dashed while a deferred value is pending. */
-  .stream-box {
-    margin: 0;
-  }
-
-  .stream-box.pending {
-    border-style: dashed;
-  }
-
-  .stream-box.done {
-    border-color: var(--accent);
-  }
-
-  @media (max-width: 640px) {
-    .split {
-      grid-template-columns: minmax(0, 1fr);
-    }
   }
 }

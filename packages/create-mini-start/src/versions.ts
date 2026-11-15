@@ -20,6 +20,16 @@ export const VERSIONS = {
   'lint-staged': '^17.6.0',
   oxlint: '^1.93.0',
   prettier: '^3.10.1',
+  // App add-ons (routing, state, data fetching).
+  'react-router': '^8.5.1',
+  zustand: '^5.1.0',
+  '@tanstack/react-query': '^5.107.1',
+  // Testing add-on.
+  vitest: '^5.1.0',
+  jsdom: '^31.0.1',
+  '@testing-library/react': '^16.3.3',
+  '@testing-library/jest-dom': '^7.0.1',
+  '@testing-library/user-event': '^14.6.10',
   // Web Components pattern only (not used by the demo).
   lit: '^3.3.3',
 } as const

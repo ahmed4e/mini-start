@@ -4,8 +4,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { after, describe, it } from 'node:test'
 import { type CreateEvent, createProject } from '../src/create.ts'
+import { DEMO_DIR, demoFiles, planDemo } from '../scripts/sync-demo.ts'
 import { planProject } from '../src/generate.ts'
 import {
+  ADD_ON_GROUPS,
+  ADD_ON_IDS,
+  ADD_ONS,
   type AddOnId,
   checkTarget,
   normalizeOptions,
@@ -29,12 +33,12 @@ const content = (files: ReturnType<typeof planProject>, file: string) => {
   return found.content
 }
 
-describe('versions', () => {
-  it('match the demo app, so new projects use versions this repo runs on', () => {
-    const demo = JSON.parse(fs.readFileSync(new URL('../../../apps/demo/package.json', import.meta.url), 'utf8'))
-    const demoVersions = { ...demo.dependencies, ...demo.devDependencies }
-    for (const [name, range] of Object.entries(VERSIONS)) {
-      if (name in demoVersions) assert.equal(range, demoVersions[name], name)
+describe('demo app', () => {
+  it('apps/demo is exactly what the generator produces (run `pnpm demo:sync` to update it)', () => {
+    const planned = planDemo()
+    assert.deepEqual(demoFiles(), planned.map((file) => file.path).sort())
+    for (const file of planned) {
+      assert.equal(fs.readFileSync(path.join(DEMO_DIR, file.path), 'utf8'), file.content, file.path)
     }
   })
 })
@@ -101,6 +105,49 @@ describe('planProject', () => {
     assert.match(content(files, 'src/components/organisms/NextSteps.tsx'), /Tailwind classes/)
 
     for (const file of plan('atomic', [])) assert.doesNotMatch(file.content, /tailwind/i, file.path)
+  })
+
+  it('CSS Modules: component styles move into .module.css files next to the components', () => {
+    for (const pattern of PATTERNS) {
+      const files = plan(pattern.id, ['css-modules'])
+      const paths = new Set(files.map((f) => f.path))
+      const modules = files.filter((f) => f.path.endsWith('.module.css'))
+      assert.ok(modules.length > 0, pattern.id)
+      for (const mod of modules) {
+        assert.equal(mod.addOn, 'css-modules')
+        const component = mod.path.replace(/\.module\.css$/, '.tsx')
+        assert.ok(paths.has(component), `${mod.path} has no component`)
+        const source = content(files, component)
+        assert.match(source, /^import styles from '\.\/\w+\.module\.css'$/m, component)
+        // Every class the component uses exists in its module.
+        for (const match of source.matchAll(/\{styles\.(\w+)\}/g)) {
+          assert.match(mod.content, new RegExp(`\\.${match[1]}[ :{,]`), `${component}: .${match[1]}`)
+        }
+      }
+      // Only global helpers are left as string class names.
+      for (const file of files.filter((f) => f.path.endsWith('.tsx'))) {
+        for (const match of file.content.matchAll(/className="([^"]+)"/g)) {
+          assert.ok(['muted', 'active', 'p-8 text-lg'].includes(match[1]!), `${pattern.id}: ${file.path} uses "${match[1]}"`)
+        }
+      }
+      const css = content(files, 'src/styles.css')
+      assert.doesNotMatch(css, /\.card|\.button|\.site-header|\.container|\.story/, pattern.id)
+      assert.match(css, /\.muted \{/)
+      assert.match(content(files, 'README.md'), /^## Styling: CSS Modules$/m)
+    }
+
+    const files = plan('atomic', ['css-modules'])
+    assert.match(content(files, 'src/components/atoms/Card.tsx'), /className=\{styles\.card\}/)
+    const header = content(files, 'src/components/organisms/SiteHeader.module.css')
+    assert.match(header, /^\.header \{/m)
+    assert.match(header, /a:global\(\.active\)/)
+    assert.match(content(files, 'src/components/organisms/Hero.module.css'), /@keyframes rise/)
+    assert.match(content(plan('component-driven', ['css-modules']), 'src/preview/ComponentGallery.module.css'), /^\.name \{/m)
+
+    for (const file of plan('atomic', ['tailwind'])) {
+      assert.ok(!file.path.endsWith('.module.css'), file.path)
+      assert.doesNotMatch(file.content, /module\.css|CSS Modules/, file.path)
+    }
   })
 
   it('adds the Husky + lint-staged hook, linter and formatter only when chosen', () => {
@@ -209,6 +256,178 @@ describe('design patterns', () => {
   })
 })
 
+describe('Docker + nginx add-on', () => {
+  it('adds the container files only when chosen', () => {
+    const files = plan('atomic', ['docker'])
+    for (const file of ['Dockerfile', '.dockerignore', 'nginx.conf', 'compose.yaml']) {
+      assert.equal(byPath(files).get(file)?.addOn, 'docker', file)
+    }
+    assert.match(content(files, 'README.md'), /^## Docker$/m)
+    for (const file of plan('atomic', ['tailwind'])) {
+      assert.doesNotMatch(file.path, /docker|nginx|compose/i)
+      assert.doesNotMatch(file.content, /docker|nginx/i, file.path)
+    }
+  })
+
+  it('builds with the chosen package manager and its lockfile', () => {
+    const dockerfile = (pm: PackageManager) => content(plan('atomic', ['docker'], pm), 'Dockerfile')
+    assert.match(dockerfile('pnpm'), /COPY package\.json pnpm-lock\.yaml \.\/\nRUN pnpm install --frozen-lockfile\n[\s\S]*RUN pnpm build/)
+    assert.match(dockerfile('npm'), /COPY package\.json package-lock\.json \.\/\nRUN npm ci\n[\s\S]*RUN npm run build/)
+    assert.match(dockerfile('yarn'), /RUN yarn install --frozen-lockfile\n[\s\S]*RUN yarn build/)
+    assert.match(dockerfile('bun'), /^FROM oven\/bun:1-alpine AS build$/m)
+    // Two stages: the final image is nginx with only the built files.
+    assert.match(dockerfile('npm'), /FROM nginxinc\/nginx-unprivileged:stable-alpine\nCOPY nginx\.conf \/etc\/nginx\/conf\.d\/default\.conf\nCOPY --from=build \/app\/dist \/usr\/share\/nginx\/html/)
+    assert.doesNotMatch(dockerfile('npm'), /pnpm|VITE_/)
+  })
+
+  it('nginx serves a single-page app on the port the container exposes', () => {
+    const files = plan('atomic', ['docker', 'router', 'query', 'env-errors'])
+    const conf = content(files, 'nginx.conf')
+    assert.match(conf, /listen 8080;/)
+    assert.match(conf, /location \/ \{[^}]*try_files \$uri \$uri\/ \/index\.html;/)
+    assert.match(conf, /location \/assets\/ \{[^}]*immutable/)
+    assert.match(conf, /location = \/healthz/)
+    assert.match(conf, /# location \/api\/ \{/)
+    assert.equal(conf.split('{').length, conf.split('}').length, 'balanced braces')
+    assert.match(content(files, 'Dockerfile'), /EXPOSE 8080/)
+    assert.match(content(files, 'Dockerfile'), /ARG VITE_API_URL\nRUN pnpm build/)
+    assert.match(content(files, 'compose.yaml'), /- '8080:8080'/)
+    assert.doesNotMatch(content(plan('atomic', ['docker']), 'nginx.conf'), /api|router/)
+  })
+})
+
+describe('app add-ons', () => {
+  const NEW: AddOnId[] = ['router', 'state', 'query', 'theme', 'env-errors', 'testing']
+  const deps = (files: ReturnType<typeof planProject>) => {
+    const pkg = JSON.parse(content(files, 'package.json'))
+    return { ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>
+  }
+  const find = (files: ReturnType<typeof planProject>, suffix: string) => {
+    const file = files.find((f) => f.path.endsWith(suffix))
+    assert.ok(file, `expected a file ending in ${suffix}`)
+    return file
+  }
+
+  it('each add-on brings its own dependencies and files, and nothing leaks without it', () => {
+    const expected: Record<string, { deps: string[]; files: string[] }> = {
+      router: { deps: ['react-router'], files: ['/AboutPage.tsx', '/NotFoundPage.tsx', '/HomePage.tsx'] },
+      state: { deps: ['zustand'], files: [] },
+      query: { deps: ['@tanstack/react-query'], files: ['/api.ts', '/useTips.ts', '/TipsCard.tsx', 'public/api/tips.json'] },
+      theme: { deps: [], files: [] },
+      'env-errors': { deps: [], files: ['/env.ts', '/ErrorBoundary.tsx', '/ErrorFallback.tsx', '.env.example', 'src/vite-env.d.ts'] },
+      testing: { deps: ['vitest', 'jsdom', '@testing-library/react'], files: ['src/test/setup.ts'] },
+    }
+    for (const pattern of PATTERNS) {
+      const none = plan(pattern.id)
+      for (const addOn of NEW) {
+        const files = plan(pattern.id, [addOn])
+        for (const name of expected[addOn]!.deps) {
+          assert.equal(deps(files)[name], VERSIONS[name as keyof typeof VERSIONS], `${pattern.id} ${addOn}: ${name}`)
+          assert.equal(deps(none)[name], undefined, `${name} without ${addOn}`)
+        }
+        for (const suffix of expected[addOn]!.files) find(files, suffix)
+        assert.ok(files.length > none.length, `${pattern.id} ${addOn} adds files`)
+        assert.match(content(files, 'README.md'), /^## What the add-ons added$/m)
+      }
+      assert.doesNotMatch(content(none, 'README.md'), /What the add-ons added/)
+    }
+  })
+
+  it('every relative import resolves with all add-ons, in every pattern, with and without CSS Modules', () => {
+    for (const pattern of PATTERNS) {
+      for (const extra of [[], ['css-modules', 'tailwind']] as AddOnId[][]) {
+        const files = plan(pattern.id, [...NEW, ...extra])
+        const paths = new Set(files.map((f) => f.path))
+        for (const file of files) {
+          if (!/\.tsx?$/.test(file.path)) continue
+          for (const match of file.content.matchAll(/from '(\.[^']*)'|^import '(\.[^']*)'/gm)) {
+            const target = path.posix.join(path.posix.dirname(file.path), (match[1] ?? match[2])!)
+            const candidates = [target, `${target}.ts`, `${target}.tsx`, `${target}/index.ts`]
+            assert.ok(candidates.some((c) => paths.has(c)), `${pattern.id}: ${file.path} imports ${target}`)
+          }
+        }
+        if (extra.length) {
+          for (const file of files.filter((f) => f.path.endsWith('.tsx') && !f.path.includes('.stories.'))) {
+            for (const match of file.content.matchAll(/className="([^"]+)"/g)) {
+              assert.ok(['muted', 'active', 'p-8 text-lg'].includes(match[1]!), `${pattern.id}: ${file.path} uses "${match[1]}"`)
+            }
+          }
+        }
+      }
+    }
+  })
+
+  it('the patterns keep their rules with every add-on selected', () => {
+    // Atomic: a level never imports from a higher one.
+    const levels = ['atoms', 'molecules', 'organisms', 'templates', 'pages']
+    for (const file of plan('atomic', NEW).filter((f) => f.path.startsWith('src/components/'))) {
+      const own = levels.indexOf(file.path.split('/')[2]!)
+      for (const match of file.content.matchAll(/from '\.\.\/(\w+)\//g)) {
+        assert.ok(levels.indexOf(match[1]!) < own, `${file.path} imports from ${match[1]}`)
+      }
+    }
+    // Smart-Dumb: presentational components hold no state and never reach into containers.
+    const smartDumb = plan('smart-dumb', NEW)
+    for (const file of smartDumb.filter((f) => f.path.startsWith('src/components/') && !f.path.includes('.test.'))) {
+      assert.doesNotMatch(file.content, /from '[^']*containers|useState|useEffect|useQuery|useCounterStore/, file.path)
+    }
+    for (const name of ['CounterCard', 'TipsCard', 'ThemeToggle']) find(smartDumb, `src/containers/${name}.tsx`)
+    // Domain-Driven: outside code goes through a domain's index; shared never imports a domain.
+    const ddd = plan('domain-driven', NEW)
+    assert.match(content(ddd, 'src/pages/HomePage.tsx'), /from '\.\.\/domains\/tips'/)
+    assert.match(content(ddd, 'src/domains/counter/index.ts'), /export \{ useCounterStore \} from '\.\/store'/)
+    assert.match(content(ddd, 'src/domains/counter/store.ts'), /from '\.\/model'/)
+    for (const file of ddd.filter((f) => f.path.startsWith('src/shared/'))) {
+      assert.doesNotMatch(file.content, /domains/, file.path)
+    }
+    for (const file of ddd.filter((f) => /^src\/(pages|App)/.test(f.path))) {
+      assert.doesNotMatch(file.content, /domains\/\w+\//, `${file.path} reaches inside a domain`)
+    }
+    // Component-Driven: every component folder has an index; the gallery is a route.
+    const cdd = plan('component-driven', NEW)
+    for (const name of ['ThemeToggle', 'TipList', 'TipsCard', 'ErrorFallback']) {
+      find(cdd, `src/components/${name}/index.ts`)
+      find(cdd, `src/components/${name}/${name}.stories.tsx`)
+    }
+    assert.match(content(cdd, 'src/App.tsx'), /<Route path="\/components" element=\{<ComponentGallery \/>\} \/>/)
+    assert.doesNotMatch(content(cdd, 'src/App.tsx'), /hashchange/)
+    // Web Components: the toggle and counter are elements, wired to the React side.
+    const wc = plan('web-components', NEW)
+    find(wc, 'src/elements/app-theme-toggle.ts')
+    find(wc, 'src/elements/app-counter.test.ts')
+    assert.match(content(wc, 'src/elements/index.ts'), /'app-theme-toggle': AppThemeToggle,/)
+    assert.match(content(wc, 'src/pages/HomePage.tsx'), /oncount-changed=\{\(event\) => setCount\(event\.detail\)\}/)
+    assert.ok(!wc.some((f) => f.path.endsWith('/useTheme.ts')))
+  })
+
+  it('wires the providers, config and theme colors', () => {
+    const files = plan('atomic', NEW)
+    const main = content(files, 'src/main.tsx')
+    assert.match(main, /<ErrorBoundary>\n {6}<QueryClientProvider client=\{queryClient\}>\n {8}<App \/>/)
+    assert.match(content(files, 'vite.config.ts'), /^\/\/\/ <reference types="vitest\/config" \/>/)
+    assert.match(content(files, 'vite.config.ts'), /environment: 'jsdom'/)
+    const pkg = JSON.parse(content(files, 'package.json'))
+    assert.equal(pkg.scripts.test, 'vitest run')
+    assert.match(content(files, 'index.html'), /localStorage\.getItem\('theme'\)/)
+    const css = content(files, 'src/styles.css')
+    assert.match(css, /:root:not\(\[data-theme='light'\]\) \{/)
+    assert.match(css, /:root\[data-theme='dark'\] \{\n {2}color-scheme: dark;\n {2}--bg: #0b0b0d;/)
+    assert.match(content(files, '.gitignore'), /^\.env$/m)
+    assert.match(find(files, '/api.ts').content, /env\.apiUrl/)
+    assert.doesNotMatch(find(plan('atomic', ['query']), '/api.ts').content, /from '[^']*env'/)
+    // Without the add-ons, none of this appears.
+    const none = plan('atomic')
+    assert.doesNotMatch(content(none, 'src/styles.css'), /data-theme/)
+    assert.doesNotMatch(content(none, 'index.html'), /<script>\n/)
+    assert.equal(JSON.parse(content(none, 'package.json')).scripts.test, undefined)
+  })
+
+  it('every add-on id is in the catalog with a group', () => {
+    assert.deepEqual(ADD_ONS.map((a) => a.id), [...ADD_ON_IDS])
+    for (const addOn of ADD_ONS) assert.ok(ADD_ON_GROUPS.includes(addOn.group), addOn.id)
+  })
+})
+
 describe('options', () => {
   it('validates project names', () => {
     assert.equal(validateName('my-app'), null)
@@ -240,7 +459,11 @@ describe('options', () => {
     assert.equal(options.framework, 'react')
     assert.equal(options.pattern, 'atomic')
     assert.deepEqual(options.addOns, ['tailwind'])
-    assert.deepEqual(normalizeOptions({ name: 'a', addOns: ['husky', 'tailwind'] }, tmp).options.addOns, ['tailwind', 'husky'])
+    assert.deepEqual(normalizeOptions({ name: 'a', addOns: ['husky', 'css-modules', 'tailwind'] }, tmp).options.addOns, [
+      'tailwind',
+      'css-modules',
+      'husky',
+    ])
     assert.equal(options.packageManager, 'npm')
     assert.equal(options.install, true)
     assert.equal(options.git, false)

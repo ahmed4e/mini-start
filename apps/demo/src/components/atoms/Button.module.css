@@ -1,0 +1,12 @@
+.button {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.1);
+}

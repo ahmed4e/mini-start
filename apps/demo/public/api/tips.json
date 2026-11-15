@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "text": "This list was fetched from public/api/tips.json and cached by TanStack Query."
+  },
+  {
+    "id": 2,
+    "text": "Point the API URL at your backend, and keep hooks like useTips as the only place that knows the address."
+  },
+  {
+    "id": 3,
+    "text": "A query gives you loading and error state, so components only decide what to show."
+  }
+]

@@ -1,63 +1,81 @@
 # mini-start
 
-Two things live in this repo:
-
-- **A starter-project builder.** You choose a framework, a design pattern and
-  add-ons in a browser UI, and it creates a project that contains only what
-  you chose.
-- **The mini-start framework.** A from-scratch, minimal re-implementation of
-  TanStack Start, with a demo app. New projects don't use it or contain it.
+A starter-project builder. You choose a framework, a design pattern and
+add-ons in a browser UI, and it creates a project that contains only what you
+chose.
 
 ```
 packages/create-mini-start             the project builder (browser UI and terminal)
-packages/create-mini-start/framework   the mini-start framework (TypeScript source)
-apps/demo                              a demo app built with the framework
+apps/demo                              a project the builder generated, with every add-on
+packages/create-mini-start/framework   the mini-start framework: a separate reference project (see below)
 docs/                                  notes on how TanStack Start works
 ```
 
 ## Create a new project
 
 ```bash
+pnpm install
 pnpm dev                    # the project builder, on http://localhost:5173
 pnpm create-app --ui        # the same builder on its default port (4600)
 pnpm create-app my-app      # or answer prompts in the terminal
 ```
 
-The builder lets you name the project, choose a framework (React for now) and
-a design pattern (Atomic Design by default, or Component-Driven, Smart-Dumb,
-Domain-Driven or Web Components), add Tailwind CSS and a Husky + lint-staged pre-commit hook, pick a package manager,
-and preview every generated file before you click **Create**. It then writes
-the files, installs dependencies, and runs `git init`.
+The builder lets you name the project, pick a package manager, and choose:
 
-A new project is a plain React + TypeScript app on Vite. Its only runtime
-dependencies are `react` and `react-dom` (plus `lit` for the Web Components
-pattern). See [`packages/create-mini-start`](packages/create-mini-start/README.md).
+- **Framework**: React (more will follow)
+- **Design pattern**: Atomic Design (default), Component-Driven, Smart-Dumb,
+  Domain-Driven or Web Components
+- **Styling**: Tailwind CSS, CSS Modules
+- **App**: routing (React Router), state management (Zustand), data fetching
+  (TanStack Query), a theme toggle, env variables + error handling
+- **Quality**: testing (Vitest + Testing Library), Husky + lint-staged
+- **Deploy**: Docker + nginx
 
-## The mini-start framework
+You see every generated file before you click **Create**. The builder then
+writes the files, installs dependencies, and runs `git init`.
 
-A full-stack React framework on Vite, re-implementing the core of **TanStack
-Start**: file-based routing, type-safe links, loaders, streaming SSR with
-hydration, server functions and API routes. It uses no TanStack packages; its
-only runtime dependencies are React and Vite. It is about 4,000 lines of
-heavily commented TypeScript.
-[`docs/how-tanstack-start-works.md`](docs/how-tanstack-start-works.md) explains
-how TanStack Start works internally and maps each piece to the file here that
-re-implements it. The rest of this page is about the framework and its demo
-app.
+A new project is a plain React + TypeScript app on Vite. Without add-ons its
+only runtime dependencies are `react` and `react-dom`. See
+[`packages/create-mini-start`](packages/create-mini-start/README.md) for what
+each choice adds.
 
-## Quick start
+## The demo app
+
+`apps/demo` is a project the builder generated: Atomic Design with every
+add-on except Husky and Docker (a git hook and an image build both need the
+project to be the top of its own repository). It is
+never edited by hand. After changing what the builder generates, run
+`pnpm demo:sync`; a test fails while the two differ.
 
 ```bash
-pnpm install
-pnpm dev            # the project builder: http://localhost:5173
-pnpm demo           # the demo app (apps/demo): http://localhost:5180
-pnpm demo:build     # demo: dist/client (browser) + dist/server/server.js
-pnpm demo:start     # demo: production server on PORT (default 3000)
-pnpm test           # unit tests (node:test, no extra dependencies)
-pnpm typecheck      # includes compile-time tests of route type safety
+pnpm demo           # dev server: http://localhost:5180
+pnpm demo:build     # type-check and build to apps/demo/dist
+pnpm demo:start     # serve the built app
+pnpm test:demo      # the demo's own tests (Vitest)
+pnpm demo:sync      # regenerate apps/demo from the builder
+```
+
+## Checks
+
+```bash
+pnpm test           # 50 unit tests (node:test, no extra dependencies)
+pnpm typecheck      # the builder, the framework and the demo
 ```
 
 Requires Node.js 22.18+ (the tests run TypeScript directly) and pnpm.
+
+## The mini-start framework
+
+`packages/create-mini-start/framework` is a separate piece of work that lives
+in this repo: a from-scratch, minimal re-implementation of **TanStack Start**
+(file-based routing, type-safe links, loaders, streaming SSR with hydration,
+server functions and API routes) in about 4,000 lines of commented
+TypeScript, with no TanStack packages. The builder does not use it, and new
+projects don't contain it. No app in this repo runs on it any more; it is kept
+as a reference implementation with its unit tests.
+[`docs/how-tanstack-start-works.md`](docs/how-tanstack-start-works.md) explains
+how TanStack Start works internally and maps each piece to the file that
+re-implements it. The rest of this page describes the framework.
 
 ## What a mini-start app looks like
 
@@ -133,20 +151,12 @@ export const Route = createFileRoute('/api/health')({
 6. **Navigate.** `<Link>` is a real `<a>`. Clicks run loaders in the browser;
    server functions turn into `fetch` calls.
 
-## Testing
+## Framework tests
 
-- `pnpm test`: 41 unit tests. They cover route matching, loading semantics,
-  dehydrate/hydrate, the serializer (including prototype-pollution and
-  script-injection safety), the stream injector, the compiler (stubs, id
-  stability, dead-code elimination, line preservation), the route generator,
-  and the project generator.
-- `pnpm typecheck`: `apps/demo/src/type-checks.tsx` contains `@ts-expect-error`
-  cases that fail the build if type safety regresses.
-- `pnpm --filter demo e2e [url]` (start `pnpm demo` first): a real-browser test over the Chrome DevTools
-  Protocol, with 26 checks: hydration, client navigation, preload cache reuse,
-  boundaries, back/forward, mutations, validation, search params, redirects,
-  streaming, and no console errors. It needs Chrome; set `CHROME_PATH` if Chrome
-  isn't found automatically.
+`pnpm test` includes 23 tests of the framework: route matching, loading
+semantics, dehydrate/hydrate, the serializer (including prototype-pollution
+and script-injection safety), the stream injector, the compiler (stubs, id
+stability, dead-code elimination, line preservation) and the route generator.
 
 ## Not included (compared with TanStack Start)
 

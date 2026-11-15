@@ -192,7 +192,10 @@ async function main() {
     chosenAddOns = (await confirm(`Add ${only.name}?`, DEFAULT_ADD_ONS.includes(only.id))) ? [only.id] : []
   } else if (!chosenAddOns && rl) {
     console.log(`\n  ${bold('Add-ons')}`)
-    ADD_ONS.forEach((addOn, i) => console.log(`    ${cyan(String(i + 1))}. ${addOn.name} ${dim(`- ${addOn.description}`)}`))
+    ADD_ONS.forEach((addOn, i) => {
+      if (addOn.group !== ADD_ONS[i - 1]?.group) console.log(`    ${dim(addOn.group)}`)
+      console.log(`    ${cyan(String(i + 1))}. ${addOn.name} ${dim(`- ${addOn.description}`)}`)
+    })
     const defaults = DEFAULT_ADD_ONS.map((id) => ADD_ON_IDS.indexOf(id) + 1).join(',')
     for (;;) {
       const answer = await ask('Numbers, comma-separated, or "none"', defaults)
