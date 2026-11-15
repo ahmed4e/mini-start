@@ -1,0 +1,22 @@
+{
+  "name": "create-mini-start",
+  "version": "0.1.0",
+  "description": "Creates starter projects from a browser UI or the terminal: pick a framework, a design pattern and add-ons.",
+  "type": "module",
+  "bin": {
+    "create-mini-start": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'test/*.test.ts'"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}

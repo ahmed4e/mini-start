@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="create-token" content="__CREATE_TOKEN__">
+<title>mini-start · Create a new project</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f4f4f5;
+  --panel: #ffffff;
+  --panel-2: #f8f8f9;
+  --text: #18181b;
+  --muted: #6b6b76;
+  --faint: #a1a1aa;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-soft: #effcf9;
+  --accent-ring: rgba(15, 118, 110, 0.22);
+  --on-accent: #ffffff;
+  --warn-bg: #fffbeb;
+  --warn-border: #f5d27a;
+  --warn-text: #8a4b08;
+  --danger: #be123c;
+  --danger-soft: #fff1f2;
+  --code-bg: #fbfbfc;
+  --log-bg: #111114;
+  --log-text: #d4d4d8;
+  --tok-c: #8a8f98;
+  --tok-s: #0f766e;
+  --tok-k: #7c3aed;
+  --tok-n: #c2410c;
+  --tok-t: #2563eb;
+  --mono: ui-monospace, SFMono-Regular, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #09090b;
+    --panel: #131316;
+    --panel-2: #18181c;
+    --text: #ececef;
+    --muted: #a1a1aa;
+    --faint: #63636e;
+    --border: #26262b;
+    --border-strong: #3a3a42;
+    --accent: #2dd4bf;
+    --accent-hover: #5eead4;
+    --accent-soft: #0e2624;
+    --accent-ring: rgba(45, 212, 191, 0.28);
+    --on-accent: #042f2e;
+    --warn-bg: #261d0c;
+    --warn-border: #8a6514;
+    --warn-text: #fcd34d;
+    --danger: #fb7185;
+    --danger-soft: #2a1218;
+    --code-bg: #0f0f12;
+    --log-bg: #0a0a0c;
+    --tok-c: #6b7280;
+    --tok-s: #5eead4;
+    --tok-k: #c4b5fd;
+    --tok-n: #fdba74;
+    --tok-t: #93c5fd;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+button, input { font: inherit; color: inherit; }
+code { font-family: var(--mono); }
+[hidden] { display: none !important; }
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; padding: 0 20px;
+  background: var(--panel); border-bottom: 1px solid var(--border);
+}
+.topbar svg { width: 26px; height: 26px; flex: none; }
+.topbar h1 { margin: 0; font-size: 15px; font-weight: 600; }
+.topbar h1 span { color: var(--muted); font-weight: 400; }
+.pill {
+  margin-left: auto; padding: 2px 9px;
+  font: 12px var(--mono); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 999px;
+}
+
+/* Layout */
+.layout {
+  display: grid; grid-template-columns: minmax(360px, 500px) minmax(0, 1fr);
+  gap: 20px; align-items: start;
+  max-width: 1500px; margin: 0 auto; padding: 20px;
+}
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+
+/* Form */
+.panel { min-width: 0; }
+.form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 26px; padding: 24px; }
+.section-title {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
+}
+.num {
+  display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--accent); font-size: 11px; letter-spacing: 0;
+}
+.field { display: grid; gap: 6px; margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field-label { font-size: 13px; font-weight: 550; }
+.text-input {
+  width: 100%; padding: 9px 12px;
+  font: 14px var(--mono);
+  background: var(--panel); border: 1px solid var(--border-strong); border-radius: 8px;
+}
+.text-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.text-input.invalid { border-color: var(--danger); }
+.text-input.invalid:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent); }
+.field-error { font-size: 13px; color: var(--danger); }
+.target { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--muted); }
+.target code { color: var(--text); word-break: break-all; }
+
+.addons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.addon {
+  position: relative; display: grid; align-content: start; gap: 3px;
+  padding: 12px 14px 12px 42px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+#patterns { grid-template-columns: 1fr; }
+.addon:hover { border-color: var(--border-strong); }
+.addon:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.addon input, .seg input, .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.box {
+  position: absolute; left: 14px; top: 14px; display: grid; place-items: center;
+  width: 18px; height: 18px; border: 1.5px solid var(--border-strong); border-radius: 5px; background: var(--panel);
+}
+.addon input:checked ~ .box { background: var(--accent); border-color: var(--accent); }
+.addon input:checked ~ .box::after {
+  content: ''; width: 5px; height: 9px; margin-top: -2px;
+  border: solid var(--on-accent); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.addon input:focus-visible ~ .box { box-shadow: 0 0 0 3px var(--accent-ring); }
+/* Radio cards (one choice, e.g. the framework) get a round box with a dot. */
+.box.round { border-radius: 50%; }
+.addon input:checked ~ .box.round::after {
+  width: 8px; height: 8px; margin: 0; border: 0; border-radius: 50%; background: var(--on-accent); transform: none;
+}
+.addon-name { font-size: 14px; font-weight: 600; }
+.addon-desc { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.addon-meta { margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--faint); }
+.addon:has(input:checked) .addon-meta { color: var(--muted); }
+
+.segmented { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.seg {
+  position: relative; display: grid; gap: 1px; padding: 9px 10px; cursor: pointer; text-align: center;
+  border: 1px solid var(--border); border-radius: 9px; transition: border-color 0.15s, background 0.15s;
+}
+.seg:hover { border-color: var(--border-strong); }
+.seg:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.seg:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--accent-ring); }
+.seg:has(input:disabled) { cursor: not-allowed; opacity: 0.45; }
+.seg-name { font-weight: 600; font-size: 14px; }
+.seg-version { font: 11px var(--mono); color: var(--muted); }
+
+.toggles { display: grid; gap: 14px; }
+.toggle { position: relative; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.toggle:has(input:disabled) { cursor: not-allowed; opacity: 0.5; }
+.switch {
+  position: relative; flex: none; width: 34px; height: 20px; margin-top: 1px;
+  background: var(--border-strong); border-radius: 999px; transition: background 0.15s;
+}
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.15s;
+}
+.toggle input:checked + .switch { background: var(--accent); }
+.toggle input:checked + .switch::after { transform: translateX(14px); }
+.toggle input:focus-visible + .switch { box-shadow: 0 0 0 3px var(--accent-ring); }
+.toggle-title { font-size: 14px; font-weight: 550; }
+.toggle-desc { font-size: 12.5px; color: var(--muted); }
+.toggle-desc code { font-size: 12px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 14px; font-size: 14px; font-weight: 550; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--border-strong); border-radius: 9px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover { background: var(--panel-2); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-ring); }
+.btn-primary { width: 100%; padding: 12px; font-size: 15px; font-weight: 600; background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-primary:disabled { cursor: not-allowed; opacity: 0.5; }
+.btn svg { width: 16px; height: 16px; }
+
+.cli {
+  display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 6px 6px 6px 12px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+}
+.cli-label { flex: none; font-size: 12px; color: var(--muted); }
+.cli code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 12px; scrollbar-width: thin; }
+.icon-btn {
+  flex: none; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 6px; color: var(--muted);
+}
+.icon-btn:hover { background: var(--panel); border-color: var(--border); color: var(--text); }
+.icon-btn svg { width: 15px; height: 15px; }
+.form-error {
+  padding: 10px 12px; font-size: 13.5px;
+  background: var(--danger-soft); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 8px;
+}
+
+/* Progress */
+.progress { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; padding: 24px; }
+.progress h2 { margin: 0; font-size: 20px; }
+.progress h2 + p { margin: 4px 0 0; color: var(--muted); font-size: 14px; word-break: break-all; }
+.steps { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.step { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; }
+.step-icon {
+  display: grid; place-items: center; width: 22px; height: 22px;
+  border: 1.5px solid var(--border-strong); border-radius: 50%; color: var(--on-accent);
+}
+.step-icon svg { width: 13px; height: 13px; }
+.step.running .step-icon { border-color: var(--accent); border-right-color: transparent; animation: spin 0.8s linear infinite; }
+.step.done .step-icon { background: var(--accent); border-color: var(--accent); }
+.step.failed .step-icon { background: var(--danger); border-color: var(--danger); color: #fff; }
+.step.skipped .step-icon { border-style: dashed; }
+.step.pending .step-label, .step.skipped .step-label { color: var(--muted); }
+.step-label { font-weight: 550; font-size: 14.5px; }
+.step-detail { font-size: 13px; color: var(--muted); word-break: break-word; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.log {
+  max-height: 240px; margin: 8px 0 0; padding: 10px 12px; overflow: auto;
+  font: 12px/1.55 var(--mono); white-space: pre-wrap; word-break: break-all;
+  background: var(--log-bg); color: var(--log-text); border-radius: 8px;
+}
+.success { display: flex; gap: 14px; align-items: center; }
+.success-icon {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+}
+.success-icon svg { width: 24px; height: 24px; }
+.next {
+  position: relative; margin: 0; padding: 14px 44px 14px 16px;
+  font: 13.5px/1.75 var(--mono); background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+  white-space: pre-wrap; word-break: break-all;
+}
+.next .icon-btn { position: absolute; top: 8px; right: 8px; }
+.next .prompt { color: var(--faint); user-select: none; }
+.warnings { display: grid; gap: 8px; }
+.warning {
+  padding: 10px 12px; font-size: 13.5px;
+  background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); border-radius: 8px;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Preview */
+.preview {
+  position: sticky; top: 76px; display: grid; grid-template-rows: auto minmax(0, 1fr);
+  height: calc(100vh - 96px); min-height: 420px; overflow: hidden;
+}
+.preview-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.preview-head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.preview-stats { font-size: 12.5px; color: var(--muted); }
+.preview-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 0; }
+.tree { min-height: 0; padding: 8px 6px; overflow: auto; border-right: 1px solid var(--border); font-size: 13px; }
+.row {
+  display: flex; align-items: center; gap: 6px; width: 100%; padding: 3px 8px;
+  text-align: left; white-space: nowrap; cursor: pointer;
+  background: none; border: 0; border-radius: 6px;
+}
+.row:hover { background: var(--panel-2); }
+.row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-ring); }
+.row.selected { background: var(--accent-soft); color: var(--accent); }
+.row .chev { flex: none; width: 12px; height: 12px; color: var(--faint); transition: transform 0.15s; }
+.row.open .chev { transform: rotate(90deg); }
+.row .dot { flex: none; width: 7px; height: 7px; margin: 0 2.5px; border-radius: 2px; background: var(--faint); }
+.row .dot.tsx, .row .dot.ts { background: #3b82f6; }
+.row .dot.css { background: #a855f7; }
+.row .dot.json, .row .dot.yaml { background: #eab308; }
+.row .dot.md { background: #64748b; }
+.row .dot.svg { background: #f97316; }
+.row .name { overflow: hidden; text-overflow: ellipsis; }
+.row.dir .name { font-weight: 550; }
+.tag {
+  margin-left: auto; padding: 0 6px; flex: none;
+  font-size: 10.5px; font-weight: 550; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+}
+.row.selected .tag { background: var(--panel); }
+.row.fresh { animation: fresh 1.8s ease-out; }
+@keyframes fresh { from { background: var(--accent-ring); } }
+
+.code { min-width: 0; overflow: auto; background: var(--code-bg); }
+.code-head {
+  position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 14px; font: 12.5px var(--mono); color: var(--muted);
+  background: var(--code-bg); border-bottom: 1px solid var(--border);
+}
+.code-head span:first-child { color: var(--text); }
+pre.src { margin: 0; padding: 10px 0 16px; font: 12.5px/1.65 var(--mono); counter-reset: line; tab-size: 2; }
+pre.src .ln { display: block; min-height: 1.65em; padding-right: 16px; white-space: pre; }
+pre.src .ln::before {
+  counter-increment: line; content: counter(line);
+  display: inline-block; width: 3.4em; padding-right: 1.2em; text-align: right; color: var(--faint); user-select: none;
+}
+.tc { color: var(--tok-c); font-style: italic; }
+.ts { color: var(--tok-s); }
+.tk { color: var(--tok-k); }
+.tn { color: var(--tok-n); }
+.tt { color: var(--tok-t); }
+
+.loading { display: grid; place-items: center; min-height: 240px; color: var(--muted); font-size: 14px; }
+.toast {
+  position: fixed; left: 50%; bottom: 20px; z-index: 20; transform: translateX(-50%);
+  padding: 10px 14px; font-size: 13.5px; background: var(--text); color: var(--bg); border-radius: 9px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+}
+.closed { max-width: 30rem; margin: 18vh auto; padding: 0 20px; text-align: center; }
+.closed h2 { margin: 0 0 6px; }
+.closed p { color: var(--muted); }
+
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .preview { position: relative; top: 0; height: 75vh; }
+}
+@media (max-width: 560px) {
+  .layout { padding: 12px; }
+  .form, .progress { padding: 18px; }
+  .addons { grid-template-columns: 1fr; }
+  .segmented { grid-template-columns: repeat(2, 1fr); }
+  .preview-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 200px minmax(0, 1fr); }
+  .tree { border-right: 0; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0f766e"/><path d="M8 22V10l8 7 8-7v12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <h1>mini-start <span>· Create a new project</span></h1>
+  <span class="pill" id="version"></span>
+</header>
+
+<main class="layout" id="app">
+  <section class="panel" id="left"><div class="loading">Loading…</div></section>
+  <section class="panel preview" aria-label="Preview of the generated files">
+    <div class="preview-head">
+      <h2>Preview</h2>
+      <span class="preview-stats" id="stats"></span>
+    </div>
+    <div class="preview-body">
+      <nav class="tree" id="tree" aria-label="Files"></nav>
+      <div class="code" id="code"></div>
+    </div>
+  </section>
+</main>
+
+<template id="form-template">
+  <form class="form" id="form" novalidate>
+    <section>
+      <h2 class="section-title"><span class="num">1</span>Project</h2>
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input class="text-input" id="name" type="text" autocomplete="off" spellcheck="false" required>
+        <span class="field-error" id="name-error" hidden></span>
+      </label>
+      <label class="field">
+        <span class="field-label">Location</span>
+        <input class="text-input" id="parentDir" type="text" autocomplete="off" spellcheck="false">
+        <span class="field-error" id="parentDir-error" hidden></span>
+      </label>
+      <div class="target"><span>Creates</span><code id="target"></code></div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span class="num">2</span>Framework</h2>
+      <div class="addons" id="frameworks" role="radiogroup" aria-label="Framework"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span class="num">3</span>Design pattern</h2>
+      <div class="addons" id="patterns" role="radiogroup" aria-label="Design pattern"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span class="num">4</span>Add-ons</h2>
+      <div class="addons" id="addons"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span class="num">5</span>Package manager</h2>
+      <div class="segmented" id="pms" role="radiogroup" aria-label="Package manager"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span class="num">6</span>Setup</h2>
+      <div class="toggles">
+        <label class="toggle">
+          <input type="checkbox" id="install"><span class="switch"></span>
+          <span><span class="toggle-title">Install dependencies</span><br>
+          <span class="toggle-desc">Runs <code id="install-cmd"></code> in the new folder.</span></span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="git"><span class="switch"></span>
+          <span><span class="toggle-title">Initialize a git repository</span><br>
+          <span class="toggle-desc" id="git-desc">Runs <code>git init</code> and makes a first commit.</span></span>
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <div class="form-error" id="form-error" hidden></div>
+      <button class="btn btn-primary" id="create" type="submit">Create project</button>
+      <div class="cli">
+        <span class="cli-label">Terminal</span>
+        <code id="cli"></code>
+        <button class="icon-btn" type="button" id="copy-cli" title="Copy command" aria-label="Copy command"></button>
+      </div>
+    </section>
+  </form>
+</template>
+
+<script>
+'use strict'
+
+const TOKEN = document.querySelector('meta[name="create-token"]').content
+const $ = (id) => document.getElementById(id)
+
+const ICONS = {
+  check: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>',
+  cross: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4.5 4.5l7 7m0-7l-7 7"/></svg>',
+  copy: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>',
+  chevron: '<svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg>',
+  editor: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M11.5 1.5l3 1.5v10l-3 1.5-7-6.5 7-6.5z"/><path d="M4.5 5.5L1.5 8l3 2.5"/></svg>',
+}
+
+const state = {
+  info: null,
+  options: null,
+  files: [],
+  errors: {},
+  target: '',
+  selected: 'src/App.tsx',
+  expanded: new Set(),
+  knownDirs: new Set(),
+  previous: new Map(),
+  phase: 'form',
+}
+
+// ---------------------------------------------------------------- API
+
+async function api(path, body) {
+  let res
+  try {
+    res = await fetch(path, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { 'x-create-token': TOKEN, 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+  } catch {
+    toast('Lost the connection to create-mini-start. Is it still running in your terminal?')
+    throw new Error('offline')
+  }
+  return res
+}
+
+async function apiJson(path, body) {
+  const res = await api(path, body)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), { data })
+  return data
+}
+
+// ---------------------------------------------------------------- Boot
+
+async function boot() {
+  const info = await apiJson('/api/info')
+  state.info = info
+  state.options = { ...info.defaults, addOns: [...info.defaults.addOns] }
+  $('version').textContent = `v${info.version}`
+  showForm()
+  refreshPreview()
+}
+
+// ---------------------------------------------------------------- Form
+
+function showForm() {
+  state.phase = 'form'
+  const left = $('left')
+  left.replaceChildren($('form-template').content.cloneNode(true))
+  const { info, options } = state
+
+  $('name').value = options.name
+  $('parentDir').value = options.parentDir
+
+  const frameworks = $('frameworks')
+  for (const framework of info.frameworks) {
+    const label = el('label', { class: 'addon' })
+    const input = el('input', { type: 'radio', name: 'framework', value: framework.id })
+    input.checked = options.framework === framework.id
+    input.addEventListener('change', () => {
+      options.framework = framework.id
+      onChange()
+    })
+    label.append(input, el('span', { class: 'box round' }), el('span', { class: 'addon-name' }, framework.name), el('span', { class: 'addon-desc' }, framework.description))
+    frameworks.append(label)
+  }
+
+  const patterns = $('patterns')
+  for (const pattern of info.patterns) {
+    const label = el('label', { class: 'addon' })
+    const input = el('input', { type: 'radio', name: 'pattern', value: pattern.id })
+    input.checked = options.pattern === pattern.id
+    input.addEventListener('change', () => {
+      options.pattern = pattern.id
+      onChange()
+    })
+    label.append(
+      input,
+      el('span', { class: 'box round' }),
+      el('span', { class: 'addon-name' }, pattern.name),
+      el('span', { class: 'addon-desc' }, pattern.description),
+      el('span', { class: 'addon-meta' }, `Best for: ${pattern.bestFor} · Learning curve: ${pattern.learningCurve}`),
+    )
+    patterns.append(label)
+  }
+
+  const addons = $('addons')
+  for (const addOn of info.addOns) {
+    const label = el('label', { class: 'addon' })
+    const input = el('input', { type: 'checkbox', value: addOn.id })
+    input.checked = options.addOns.includes(addOn.id)
+    input.addEventListener('change', () => {
+      options.addOns = [...addons.querySelectorAll('input:checked')].map((i) => i.value)
+      onChange()
+    })
+    label.append(input, el('span', { class: 'box' }), el('span', { class: 'addon-name' }, addOn.name), el('span', { class: 'addon-desc' }, addOn.description))
+    addons.append(label)
+  }
+
+  const pms = $('pms')
+  const installed = new Map(info.packageManagers.map((pm) => [pm.id, pm.version]))
+  for (const id of ['pnpm', 'npm', 'yarn', 'bun']) {
+    const version = installed.get(id)
+    const label = el('label', { class: 'seg', title: version ? `${id} ${version}` : `${id} is not installed` })
+    const input = el('input', { type: 'radio', name: 'pm', value: id })
+    input.checked = options.packageManager === id
+    input.disabled = !version
+    input.addEventListener('change', () => {
+      options.packageManager = id
+      onChange()
+    })
+    label.append(input, el('span', { class: 'seg-name' }, id), el('span', { class: 'seg-version' }, version || 'not installed'))
+    pms.append(label)
+  }
+
+  $('install').checked = options.install
+  $('git').checked = options.git
+  if (!info.git) {
+    $('git').disabled = true
+    $('git-desc').textContent = 'git is not installed.'
+  }
+  $('copy-cli').innerHTML = ICONS.copy
+
+  $('name').addEventListener('input', (e) => { options.name = e.target.value.trim(); onChange() })
+  $('parentDir').addEventListener('input', (e) => { options.parentDir = e.target.value; onChange() })
+  $('install').addEventListener('change', (e) => { options.install = e.target.checked; onChange() })
+  $('git').addEventListener('change', (e) => { options.git = e.target.checked; onChange() })
+  $('copy-cli').addEventListener('click', () => copy($('cli').textContent, 'Command copied'))
+  $('form').addEventListener('submit', (e) => { e.preventDefault(); create() })
+
+  updateFormMeta()
+  $('name').focus()
+  $('name').select()
+}
+
+function onChange() {
+  updateFormMeta()
+  refreshPreview()
+}
+
+function updateFormMeta() {
+  const { options } = state
+  if (state.phase !== 'form') return
+  $('install-cmd').textContent = `${options.packageManager} install`
+  $('cli').textContent = cliCommand()
+  $('target').textContent = state.target || joinPath(options.parentDir, options.name)
+  $('form-error').hidden = true
+  for (const field of ['name', 'parentDir']) {
+    const message = state.errors[field]
+    $(field).classList.toggle('invalid', Boolean(message))
+    $(`${field}-error`).hidden = !message
+    $(`${field}-error`).textContent = message || ''
+  }
+  $('create').disabled = Object.keys(state.errors).length > 0
+}
+
+function cliCommand() {
+  const { options, info } = state
+  const parts = [info.command, options.name || '<name>']
+  parts.push('--framework', options.framework)
+  parts.push('--pattern', options.pattern)
+  parts.push('--add-ons', options.addOns.length ? options.addOns.join(',') : 'none')
+  parts.push('--pm', options.packageManager)
+  if (!options.install) parts.push('--no-install')
+  if (!options.git) parts.push('--no-git')
+  if (options.parentDir.trim() && options.parentDir.trim() !== info.cwd) parts.push('--dir', shellQuote(options.parentDir.trim()))
+  return parts.join(' ')
+}
+
+function shellQuote(value) {
+  return /^[\w@%+=:,./~-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`
+}
+
+function joinPath(dir, name) {
+  return `${dir.replace(/\/+$/, '')}/${name}`
+}
+
+// ---------------------------------------------------------------- Preview
+
+let previewTimer = 0
+let previewSeq = 0
+
+function refreshPreview() {
+  clearTimeout(previewTimer)
+  previewTimer = setTimeout(async () => {
+    const seq = ++previewSeq
+    try {
+      const data = await apiJson('/api/preview', state.options)
+      if (seq !== previewSeq) return
+      state.errors = data.errors
+      state.target = data.target
+      renderPreview(data.files)
+      updateFormMeta()
+    } catch (error) {
+      if (error.message !== 'offline') toast(error.message)
+    }
+  }, 120)
+}
+
+function renderPreview(files) {
+  const previous = state.previous
+  const fresh = new Set()
+  if (previous.size) {
+    for (const file of files) if (previous.get(file.path) !== file.content) fresh.add(file.path)
+  }
+  state.previous = new Map(files.map((f) => [f.path, f.content]))
+  state.files = files
+
+  const lines = files.reduce((sum, f) => sum + f.content.split('\n').length - 1, 0)
+  $('stats').textContent = `${files.length} files · ${lines.toLocaleString()} lines`
+
+  const tree = buildTree(files)
+  // Expand folders the first time they appear.
+  for (const dir of allDirs(tree)) {
+    if (!state.knownDirs.has(dir)) {
+      state.knownDirs.add(dir)
+      state.expanded.add(dir)
+    }
+  }
+  if (!files.some((f) => f.path === state.selected)) state.selected = 'src/App.tsx'
+
+  const container = $('tree')
+  const scroll = container.scrollTop
+  container.replaceChildren(...renderDir(tree, 0, fresh))
+  container.scrollTop = scroll
+  renderCode()
+}
+
+function buildTree(files) {
+  const root = { name: '', path: '', dirs: new Map(), files: [] }
+  for (const file of files) {
+    const parts = file.path.split('/')
+    let node = root
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!node.dirs.has(parts[i])) {
+        node.dirs.set(parts[i], { name: parts[i], path: parts.slice(0, i + 1).join('/'), dirs: new Map(), files: [] })
+      }
+      node = node.dirs.get(parts[i])
+    }
+    node.files.push(file)
+  }
+  return root
+}
+
+function* allDirs(node) {
+  for (const dir of node.dirs.values()) {
+    yield dir.path
+    yield* allDirs(dir)
+  }
+}
+
+function containsFresh(node, fresh) {
+  return node.files.some((f) => fresh.has(f.path)) || [...node.dirs.values()].some((d) => containsFresh(d, fresh))
+}
+
+function renderDir(node, depth, fresh) {
+  const rows = []
+  const dirs = [...node.dirs.values()].sort((a, b) => a.name.localeCompare(b.name))
+  for (const dir of dirs) {
+    const open = state.expanded.has(dir.path)
+    const row = el('button', { type: 'button', class: `row dir${open ? ' open' : ''}`, 'aria-expanded': String(open) })
+    row.style.paddingLeft = `${8 + depth * 14}px`
+    row.innerHTML = ICONS.chevron
+    row.append(el('span', { class: 'name' }, dir.name))
+    if (!open && containsFresh(dir, fresh)) row.classList.add('fresh')
+    row.addEventListener('click', () => {
+      if (open) state.expanded.delete(dir.path)
+      else state.expanded.add(dir.path)
+      renderPreview(state.files)
+    })
+    rows.push(row)
+    if (open) rows.push(...renderDir(dir, depth + 1, fresh))
+  }
+  const files = [...node.files].sort((a, b) => a.path.localeCompare(b.path))
+  for (const file of files) {
+    const name = file.path.split('/').pop()
+    const ext = name.includes('.') ? name.split('.').pop() : ''
+    const row = el('button', { type: 'button', class: `row${file.path === state.selected ? ' selected' : ''}${fresh.has(file.path) ? ' fresh' : ''}` })
+    row.style.paddingLeft = `${20 + depth * 14}px`
+    row.append(el('span', { class: `dot ${ext}` }), el('span', { class: 'name' }, name))
+    if (file.addOn) row.append(el('span', { class: 'tag' }, file.addOn))
+    row.addEventListener('click', () => {
+      state.selected = file.path
+      for (const r of $('tree').querySelectorAll('.row.selected')) r.classList.remove('selected')
+      row.classList.add('selected')
+      renderCode()
+    })
+    rows.push(row)
+  }
+  return rows
+}
+
+function renderCode() {
+  const file = state.files.find((f) => f.path === state.selected)
+  const code = $('code')
+  if (!file) return code.replaceChildren()
+  const ext = file.path.split('.').pop()
+  const lines = highlight(file.content.replace(/\n$/, ''), ext)
+  const head = el('div', { class: 'code-head' }, el('span', {}, file.path), el('span', {}, `${lines.length} lines`))
+  const pre = el('pre', { class: 'src' })
+  pre.innerHTML = lines.map((line) => `<span class="ln">${line}</span>`).join('')
+  const scroll = code.dataset.path === file.path ? code.scrollTop : 0
+  code.replaceChildren(head, pre)
+  code.dataset.path = file.path
+  code.scrollTop = scroll
+}
+
+// A tiny highlighter: comments, strings, keywords, numbers and tags.
+const STRING = /'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"/
+const RULES = {
+  ts: [
+    [/\/\/[^\n]*|\/\*[\s\S]*?\*\//, 'tc'],
+    [new RegExp(`${STRING.source}|\`(?:\\\\.|[^\`\\\\])*\``), 'ts'],
+    [/<\/?[A-Z][\w.]*|<\/?[a-z][\w-]*(?=[\s>/])/, 'tt'],
+    [/\b(?:import|export|from|const|let|var|function|return|async|await|if|else|for|of|in|new|throw|try|catch|finally|type|interface|default|as|typeof|void|null|undefined|true|false|while|switch|case|break|continue|extends|keyof|readonly)\b/, 'tk'],
+    [/\b\d+(?:\.\d+)?\b/, 'tn'],
+  ],
+  css: [
+    [/\/\*[\s\S]*?\*\//, 'tc'],
+    [STRING, 'ts'],
+    [/@[\w-]+/, 'tk'],
+    [/--[\w-]+/, 'tt'],
+    [/#[0-9a-fA-F]{3,8}\b|\b\d*\.?\d+(?:px|rem|em|ms|s|%|fr|ch|vw|vh|deg)?\b/, 'tn'],
+  ],
+  json: [
+    [/"(?:\\.|[^"\\\n])*"(?=\s*:)/, 'tt'],
+    [STRING, 'ts'],
+    [/\b(?:true|false|null)\b|-?\b\d+(?:\.\d+)?\b/, 'tn'],
+  ],
+  yaml: [[/#[^\n]*/, 'tc'], [/^\s*[\w-]+(?=:)/, 'tt']],
+  md: [[/^#{1,6} [^\n]*/, 'tk'], [/`[^`\n]+`/, 'ts']],
+}
+RULES.tsx = RULES.js = RULES.ts
+RULES.yml = RULES.yaml
+const COMPILED = Object.fromEntries(
+  Object.entries(RULES).map(([lang, rules]) => [lang, new RegExp(rules.map(([re]) => `(${re.source})`).join('|'), 'gm')]),
+)
+
+function highlight(text, ext) {
+  const rules = RULES[ext]
+  const lines = ['']
+  const push = (chunk, cls) => {
+    const parts = chunk.split('\n')
+    parts.forEach((part, i) => {
+      if (i > 0) lines.push('')
+      if (part) lines[lines.length - 1] += cls ? `<span class="${cls}">${escapeHtml(part)}</span>` : escapeHtml(part)
+    })
+  }
+  if (!rules) {
+    push(text)
+    return lines
+  }
+  const re = COMPILED[ext]
+  re.lastIndex = 0
+  let last = 0
+  for (const match of text.matchAll(re)) {
+    if (match.index > last) push(text.slice(last, match.index))
+    const group = match.slice(1).findIndex((g) => g !== undefined)
+    push(match[0], rules[group][1])
+    last = match.index + match[0].length
+  }
+  push(text.slice(last))
+  return lines
+}
+
+function escapeHtml(text) {
+  return text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+}
+
+// ---------------------------------------------------------------- Create
+
+const STEPS = [
+  ['files', 'Write project files'],
+  ['install', 'Install dependencies'],
+  ['git', 'Initialize git repository'],
+]
+
+async function create() {
+  if ($('create').disabled) return
+  $('create').disabled = true
+  let res
+  try {
+    res = await api('/api/create', state.options)
+  } catch {
+    $('create').disabled = false
+    return
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    if (data.errors) state.errors = data.errors
+    updateFormMeta()
+    $('form-error').textContent = data.error || `Could not create the project (${res.status}).`
+    $('form-error').hidden = false
+    return
+  }
+  showProgress()
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  for (;;) {
+    let chunk
+    try {
+      chunk = await reader.read()
+    } catch {
+      toast('The connection closed before the project was finished.')
+      break
+    }
+    if (chunk.done) break
+    buffer += decoder.decode(chunk.value, { stream: true })
+    let newline
+    while ((newline = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, newline)
+      buffer = buffer.slice(newline + 1)
+      if (line.trim()) onEvent(JSON.parse(line))
+    }
+  }
+}
+
+function showProgress() {
+  state.phase = 'creating'
+  const { options } = state
+  const wrap = el('div', { class: 'progress', id: 'progress' })
+  wrap.append(
+    el('div', {}, el('h2', { id: 'progress-title' }, `Creating ${options.name}…`), el('p', {}, state.target)),
+  )
+  const steps = el('ol', { class: 'steps' })
+  for (const [id, label] of STEPS) {
+    const li = el('li', { class: 'step pending', id: `step-${id}` })
+    const body = el('div', {}, el('div', { class: 'step-label' }, label), el('div', { class: 'step-detail' }))
+    li.append(el('span', { class: 'step-icon' }), body)
+    steps.append(li)
+  }
+  wrap.append(steps, el('div', { id: 'result' }))
+  $('left').replaceChildren(wrap)
+}
+
+function onEvent(event) {
+  if (event.type === 'step') {
+    const li = $(`step-${event.step}`)
+    li.className = `step ${event.status}`
+    li.querySelector('.step-icon').innerHTML = event.status === 'done' ? ICONS.check : event.status === 'failed' ? ICONS.cross : ''
+    li.querySelector('.step-detail').textContent = event.detail || ''
+    const log = li.querySelector('.log')
+    if (log && event.status === 'done') log.remove()
+  } else if (event.type === 'log') {
+    const li = $(`step-${event.step}`)
+    let log = li.querySelector('.log')
+    if (!log) {
+      log = el('pre', { class: 'log' })
+      li.lastElementChild.append(log)
+    }
+    const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 24
+    log.textContent += `${event.line}\n`
+    if (atBottom) log.scrollTop = log.scrollHeight
+  } else if (event.type === 'done') {
+    showDone(event)
+  } else if (event.type === 'error') {
+    state.phase = 'error'
+    $('progress-title').textContent = 'Could not create the project'
+    const back = el('button', { class: 'btn', type: 'button' }, 'Back to the form')
+    back.addEventListener('click', () => { showForm(); refreshPreview() })
+    $('result').replaceChildren(el('div', { class: 'form-error' }, event.message), el('div', { class: 'actions', style: 'margin-top:12px' }, back))
+  }
+}
+
+function showDone(event) {
+  state.phase = 'done'
+  const name = state.options.name
+  const title = $('progress-title').parentElement
+  const success = el('div', { class: 'success' })
+  const icon = el('span', { class: 'success-icon' })
+  icon.innerHTML = ICONS.check
+  success.append(icon, el('div', {}, el('h2', {}, `${name} is ready`), el('p', {}, event.dir)))
+  title.replaceWith(success)
+
+  const result = $('result')
+  const nodes = []
+  if (event.warnings.length) {
+    nodes.push(el('div', { class: 'warnings' }, ...event.warnings.map((w) => el('div', { class: 'warning' }, w))))
+  }
+  nodes.push(el('div', { class: 'field-label', style: 'margin:4px 0 8px' }, 'Next steps'))
+  const next = el('pre', { class: 'next' })
+  for (const step of event.nextSteps) next.append(el('span', { class: 'prompt' }, '$ '), `${step}\n`)
+  const copyBtn = el('button', { class: 'icon-btn', type: 'button', title: 'Copy commands', 'aria-label': 'Copy commands' })
+  copyBtn.innerHTML = ICONS.copy
+  copyBtn.addEventListener('click', () => copy(event.nextSteps.join(' && '), 'Commands copied'))
+  next.append(copyBtn)
+  nodes.push(next)
+
+  const actions = el('div', { class: 'actions' })
+  if (state.info.vscode) {
+    const open = el('button', { class: 'btn', type: 'button' })
+    open.innerHTML = ICONS.editor
+    open.append('Open in VS Code')
+    open.addEventListener('click', async () => {
+      await apiJson('/api/open-editor', { dir: event.dir }).catch((e) => toast(e.message))
+      toast('Opening VS Code…')
+    })
+    actions.append(open)
+  }
+  const another = el('button', { class: 'btn', type: 'button' }, 'Create another project')
+  another.addEventListener('click', async () => {
+    const info = await apiJson('/api/info')
+    state.options.name = info.defaults.name
+    state.previous = new Map()
+    showForm()
+    refreshPreview()
+  })
+  const close = el('button', { class: 'btn', type: 'button' }, 'Close the builder')
+  close.addEventListener('click', shutdown)
+  actions.append(another, close)
+  nodes.push(actions)
+  result.replaceChildren(...nodes)
+}
+
+async function shutdown() {
+  await api('/api/shutdown', {}).catch(() => {})
+  document.body.replaceChildren(
+    el('div', { class: 'closed' }, el('h2', {}, 'The project builder has stopped'), el('p', {}, 'You can close this tab. Run create-mini-start --ui again to start another project.')),
+  )
+}
+
+// ---------------------------------------------------------------- Helpers
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag)
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value)
+  node.append(...children)
+  return node
+}
+
+async function copy(text, message) {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast(message)
+  } catch {
+    toast('Copy failed. Select the text and copy it manually.')
+  }
+}
+
+let toastTimer = 0
+function toast(message) {
+  document.querySelector('.toast')?.remove()
+  const node = el('div', { class: 'toast', role: 'status' }, message)
+  document.body.append(node)
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => node.remove(), 2600)
+}
+
+boot().catch((error) => {
+  $('left').replaceChildren(el('div', { class: 'loading' }, error.data?.error || error.message))
+})
+</script>
+</body>
+</html>

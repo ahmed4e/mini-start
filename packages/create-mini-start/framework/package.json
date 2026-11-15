@@ -1,0 +1,15 @@
+{
+  "name": "mini-start",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A from-scratch, minimal re-implementation of the ideas behind TanStack Start: file-based routing, SSR streaming, server functions and API routes on Vite.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client/index.tsx",
+    "./client-rpc": "./src/server-fn/client-rpc.ts",
+    "./server": "./src/server/index.ts",
+    "./node": "./src/server/node.ts",
+    "./vite": "./src/vite/index.ts"
+  }
+}

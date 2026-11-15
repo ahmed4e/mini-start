@@ -1,0 +1,4 @@
+packages:
+  - packages/*
+  - packages/create-mini-start/framework
+  - apps/*

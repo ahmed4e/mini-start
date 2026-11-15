@@ -1,0 +1,15 @@
+{
+  "name": "mini-start-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node packages/create-mini-start/src/cli.ts --ui --port 5173",
+    "demo": "pnpm --filter demo dev --port 5180",
+    "demo:build": "pnpm --filter demo build",
+    "demo:start": "pnpm --filter demo start",
+    "create-app": "node packages/create-mini-start/src/cli.ts",
+    "typecheck": "pnpm -r typecheck",
+    "test": "node --test 'packages/*/test/*.test.ts'"
+  },
+  "packageManager": "pnpm@11.15.0"
+}
